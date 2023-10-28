@@ -1,4 +1,5 @@
-streamlit 
-OpenAI
+streamlit
+streamlit-chat
+python-dotenv
 langchain
-WikipediaAPIWrapper
+openai
