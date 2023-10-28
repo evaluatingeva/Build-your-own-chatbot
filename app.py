@@ -78,7 +78,7 @@ def submit():
 
 
 # Create a text input for user
-st.text_input('YOU: ', key='prompt_input', on_change=submit)
+st.text_input('Ask me a Question: ', key='prompt_input', on_change=submit)
 
 
 if st.session_state.entered_prompt != "":
@@ -107,4 +107,4 @@ if st.session_state['generated']:
 # Add credit
 st.markdown("""
 ---
-Made with 🤖 by [Austin Johnson](https://github.com/AustonianAI)""")
+Made with 🤖 by [Eva Saini](https://github.com/evaluatingeva/Build-your-own-chatbot)""")
