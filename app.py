@@ -1,54 +1,110 @@
-import os
-os.environ['OPENAI_API_KEY'] = "Enter the api key"
+# Import required libraries
+from dotenv import load_dotenv
+from itertools import zip_longest
 
 import streamlit as st
-# Set the title using StreamLit
-st.title(' LangChain ')
-input_text = st.text_input('Enter Your Text: ') 
+from streamlit_chat import message
 
-
-from langchain.prompts import PromptTemplate
-# setting up the prompt templates
-title_template = PromptTemplate(
-	input_variables = ['concept'], 
-	template='Give me a youtube video title about {concept}'
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import (
+    SystemMessage,
+    HumanMessage,
+    AIMessage
 )
 
-script_template = PromptTemplate(
-	input_variables = ['title', 'wikipedia_research'], 
-	template='''Give me an attractive youtube video script based on the title {title} 
-	while making use of the information and knowledge obtained from the Wikipedia research:{wikipedia_research}'''
+# Load environment variables
+load_dotenv()
+
+# Set streamlit page configuration
+st.set_page_config(page_title="ChatBot Starter")
+st.title("ChatBot Starter")
+
+# Initialize session state variables
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = []  # Store AI generated responses
+
+if 'past' not in st.session_state:
+    st.session_state['past'] = []  # Store past user inputs
+
+if 'entered_prompt' not in st.session_state:
+    st.session_state['entered_prompt'] = ""  # Store the latest user input
+
+# Initialize the ChatOpenAI model
+chat = ChatOpenAI(
+    temperature=0.5,
+    model_name="gpt-3.5-turbo"
 )
 
 
-from langchain.memory import ConversationBufferMemory
-# We use the ConversationBufferMemory to can be used to store a history of the conversation between the user and the language model. 
-# This information can be used to improve the language model's understanding of the user's intent, and to generate more relevant and coherent responses.
+def build_message_list():
+    """
+    Build a list of messages including system, human and AI messages.
+    """
+    # Start zipped_messages with the SystemMessage
+    zipped_messages = [SystemMessage(
+        content="You are a helpful AI assistant talking with a human. If you do not know an answer, just say 'I don't know', do not make up an answer.")]
 
-memoryT = ConversationBufferMemory(input_key='concept', memory_key='chat_history')
-memoryS = ConversationBufferMemory(input_key='title', memory_key='chat_history')
+    # Zip together the past and generated messages
+    for human_msg, ai_msg in zip_longest(st.session_state['past'], st.session_state['generated']):
+        if human_msg is not None:
+            zipped_messages.append(HumanMessage(
+                content=human_msg))  # Add user messages
+        if ai_msg is not None:
+            zipped_messages.append(
+                AIMessage(content=ai_msg))  # Add AI messages
+
+    return zipped_messages
 
 
-from langchain.llms import OpenAI
-# Importing the large language model OpenAI via langchain
-model = OpenAI(temperature=0.6) 
+def generate_response():
+    """
+    Generate AI response using the ChatOpenAI model.
+    """
+    # Build the list of messages
+    zipped_messages = build_message_list()
 
-from langchain.chains import LLMChain
-chainT = LLMChain(llm=model, prompt=title_template, verbose=True, output_key='title', memory=memoryT)
-chainS = LLMChain(llm=model, prompt=script_template, verbose=True, output_key='script', memory=memoryS)
+    # Generate response using the chat model
+    ai_response = chat(zipped_messages)
+
+    return ai_response.content
 
 
-from langchain.utilities import WikipediaAPIWrapper
-wikipedia = WikipediaAPIWrapper()
+# Define function to submit user input
+def submit():
+    # Set entered_prompt to the current value of prompt_input
+    st.session_state.entered_prompt = st.session_state.prompt_input
+    # Clear prompt_input
+    st.session_state.prompt_input = ""
 
-# Display the output if the the user gives an input
-if input_text: 
-	title = chainT.run(input_text)
-	wikipedia_research = wikipedia.run(input_text) 
-	script = chainS.run(title=title, wikipedia_research=wikipedia_research)
 
-	st.write(title) 
-	st.write(script) 
+# Create a text input for user
+st.text_input('YOU: ', key='prompt_input', on_change=submit)
 
-	with st.expander('Wikipedia-based exploration: '): 
-		st.info(wikipedia_research)
+
+if st.session_state.entered_prompt != "":
+    # Get user query
+    user_query = st.session_state.entered_prompt
+
+    # Append user query to past queries
+    st.session_state.past.append(user_query)
+
+    # Generate response
+    output = generate_response()
+
+    # Append AI response to generated responses
+    st.session_state.generated.append(output)
+
+# Display the chat history
+if st.session_state['generated']:
+    for i in range(len(st.session_state['generated'])-1, -1, -1):
+        # Display AI response
+        message(st.session_state["generated"][i], key=str(i))
+        # Display user message
+        message(st.session_state['past'][i],
+                is_user=True, key=str(i) + '_user')
+
+
+# Add credit
+st.markdown("""
+---
+Made with 🤖 by [Austin Johnson](https://github.com/AustonianAI)""")
