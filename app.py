@@ -16,8 +16,8 @@ from langchain.schema import (
 load_dotenv()
 
 # Set streamlit page configuration
-st.set_page_config(page_title="ChatBot Starter")
-st.title("ChatBot Starter")
+st.set_page_config(page_title="Chat with chatbot ")
+st.title("Chat with chatbot ")
 
 # Initialize session state variables
 if 'generated' not in st.session_state:
@@ -78,7 +78,7 @@ def submit():
 
 
 # Create a text input for user
-st.text_input('Ask me a Question: ', key='prompt_input', on_change=submit)
+st.text_input('Enter your Question: ', key='prompt_input', on_change=submit)
 
 
 if st.session_state.entered_prompt != "":
@@ -107,4 +107,4 @@ if st.session_state['generated']:
 # Add credit
 st.markdown("""
 ---
-Made with 🤖 by [Eva Saini](https://github.com/evaluatingeva/Build-your-own-chatbot)""")
+Made with 💛 by [Eva Saini](https://github.com/evaluatingeva/Build-your-own-chatbot)""")
